@@ -1,0 +1,1230 @@
+using UnityEngine;
+using System.Collections;
+using UnityEngine.UI;
+
+public class gobController : MonoBehaviour
+
+{
+    public float MinSwipeLength = 5;
+    Vector2 _firstPressPos;
+    Vector2 _secondPressPos;
+    Vector2 _currentSwipe;
+    public int flawlessVictory;
+    stumble stumble;
+
+    public int extraHealth;
+    public GameObject gobHitSound;
+    public GameObject extraHealthIcon;
+    public GameObject attackSound;
+    public int meatScore;
+    public int zombieScore;
+    public bool tutJump = false;
+
+    public GameObject bsTrans;
+    public GameObject levelEndDial;
+
+    public GameObject meatBest;
+    public GameObject zombieBest;
+    public GameObject circle;
+
+
+    public static Swipe SwipeDirection;
+    public bool slide;
+    public bool jump;
+    public bool hit;
+
+    public bool zombieKilled = false;
+
+    public bool stumbler = false;
+    public bool hitter;
+
+    public int levelScore;
+
+    //public GameObject gameStar;
+
+
+
+    void scoreboard()
+    {
+        levelEndButton.SetActive(true);
+    }
+
+    void tutJumpEnds()
+    {
+        tutJump = false;
+    }
+
+
+    void invulEnds()
+    {
+
+        if (activeExtraHealth.GetComponent<extraHealth>().ExtraHealth > 0)
+
+        {
+            activeExtraHealth.GetComponent<extraHealth>().ExtraHealth -= 1;
+        }
+        
+        
+        PlayerPrefs.SetInt("extraHealth", activeExtraHealth.GetComponent<extraHealth>().ExtraHealth);
+        PlayerPrefs.Save();
+    }
+
+    void hitSoundz()
+    {
+        Instantiate(gobHitSound, new Vector3(0, 0, 0), Quaternion.identity);
+    }
+
+    public void hitButton()
+    {
+        hit = true;
+    }
+
+    public void jumpButton()
+    {
+        jump = true;
+        Invoke("doubleJumpOff", 0.01f);
+    }
+
+    public void slideButton()
+    {
+        slide = true;
+    }
+
+
+
+
+
+    public bool invulJump;
+    public float moveSpeed = 9;
+    public Transform player;
+    public Animator anim;
+    public bool grounded;
+
+    public Transform camTransform;
+    public float shake = 0f;
+    public float shakeAmount = 0.2f;
+    public float decreaseFactor = 0.5f;
+    Vector3 originalPos;
+
+    public int jumpCounter = 0;
+    public int hitCounter= 0;
+
+    public GameObject meatOne;
+    public GameObject meatTwo;
+    public GameObject meatThree;
+
+    public Transform point1;
+    public Transform point2;
+
+    public LayerMask onlyGroundMask;
+    const float groundedRadius = .1f;
+
+    public float jumpForce = 50f;
+
+    public GameObject restartButton;
+    public GameObject levelEndButton;
+    public GameObject DenemeSkor;
+    public GameObject activeExtraHealth;
+    
+    public GameObject slideSound;
+    public GameObject jumpSound;
+    public GameObject doubleJumpSound;
+    public GameObject fallSound;
+    public GameObject walkSound;
+    public GameObject deathSound;
+    public GameObject poiSound;
+    public float HungerMeter;
+    public GameObject GobFly;
+    public bool noWalk;
+    public bool levelEnd;
+    public bool tutClose;
+
+    public Text thisLevelScore;
+    public Text hiscoreScore;
+    public Text hiscoreMeat;
+    public Text hiscoreZombie;
+
+    public bool isDead;
+    public bool isInvul;
+    public bool poiEaten;
+    public Image meatBar;
+    public bool doubleJump = false;
+    public GameObject zombie;
+    public GameObject killer;
+    public GameObject airKiller;
+    public int adDeath;
+
+    void Awake()
+    {
+
+        anim = GetComponent<Animator>();
+        if (camTransform == null)
+        {
+            camTransform = GetComponent(typeof(Transform)) as Transform;
+        }
+    }
+
+    void invulAnim()
+    {
+        GetComponent<SpriteRenderer>().color = (new Color(255, 255, 255, 0));
+    }
+
+    void invulAnim2()
+    {
+        GetComponent<SpriteRenderer>().color = (new Color(255, 255, 255, 255));
+    }
+
+    void OnEnable()
+    {
+        originalPos = camTransform.localPosition;
+    }
+
+    void Start()
+    {
+
+        adDeath = PlayerPrefs.GetInt("adDeath");
+       
+        levelScore = 0;
+        PlayerPrefs.SetInt("BölümSkoru", levelScore);
+        PlayerPrefs.Save();
+        GetComponent<LevelMeat>().playerScore = meatScore;
+        GetComponent<LevelZombie>().playerScore = zombieScore;
+        //activeExtraHealth.GetComponent<extraHealth>().ExtraHealth = 0;
+        //GameObject.Find("GameObject").GetComponent<flawlessVictory14>().flawlessVictory = flawlessVictory;
+        DetectSwipe();
+
+        PlayerPrefs.SetInt("flawlessVictory", 0);
+        PlayerPrefs.Save();
+        meatBar.color = new Color32(190, 0, 39, 255);
+        meatBar.fillAmount = PlayerPrefs.GetFloat("HungerBar");
+        
+        anim.SetBool("GobHit3", false);
+
+        if (adDeath == 3)
+        {
+            adDeath = 0;
+        }
+    }
+
+    void meatOneEnds()
+    {
+        meatOne.SetActive(false);
+    }
+
+    void doubleJumpOn()
+    {
+        doubleJump = true;
+    }
+
+    void doubleJumpOff()
+    {
+        doubleJump = false;
+    }
+
+    void meatTwoEnds()
+    {
+        meatTwo.SetActive(false);
+    }
+
+    void meatThreeEnds()
+    {
+        meatThree.SetActive(false);
+    }
+
+    void GobHitEnds()
+    {
+        killer.SetActive(false);
+        airKiller.SetActive(false);
+        attackSound.SetActive(false);
+    }
+
+    //void GobHit2Ends()
+    //{
+    //    ttaknim.SetBool("GobHit2", false);
+    //    hitCounter = 0;
+    //}
+
+    //void GobHit3Ends()
+    //{
+    //    anim.SetBool("GobHit3", false);
+    //    hitCounter = 0;
+    //}
+
+
+    public void disableGobHit()
+    {
+        anim.SetBool("GobHit", false);
+    }
+
+    public void changeColor()
+    {
+        meatBar.color = new Color32(190, 0, 39, 255);
+    }
+
+    public void stumbleEnds()
+    {
+        anim.SetBool("GobStumble", false);
+        stumbler = false;
+        //jumpForce = 32;
+    }
+
+    public void dontFly()
+    {
+        jumpForce = 0;
+    }
+
+    public void hitFalse()
+    {
+        hit = false;
+    }
+
+    public void hitCounterOne()
+    {
+        hitCounter = 1;
+    }
+
+    public void hitCounterTwo()
+    {
+        hitCounter = 2;
+    }
+
+    void invulJumpEnds()
+    {
+        invulJump = false;
+    }
+
+    void slideEnds()
+    {
+        slideSound.SetActive(false);
+        noWalk = false;
+    }
+
+    void jumpSoundEnds()
+    {
+        jumpSound.SetActive(false);
+    }
+
+    public void FixedUpdate()
+    {
+        if (isDead == true)
+        {
+            restartButton.SetActive(true);
+            GetComponent<GeneralScore>().enabled = false;
+            circle.SetActive(false);
+
+            
+
+            moveSpeed = 0;
+            return;
+        }
+
+        
+
+        anim.SetBool("Grounded", grounded);
+        anim.SetFloat("velocityY", GetComponent<Rigidbody2D>().velocity.y);
+        anim.SetFloat("moveSpeed", moveSpeed);
+
+
+        if (Input.GetKey(KeyCode.Space))
+        {
+            jump = true;
+
+            Invoke("doubleJumpOff", 0.01f);
+        }
+
+        if (Input.GetKey(KeyCode.F))
+        {
+            hit = true;
+        }
+
+        if (Input.GetKey(KeyCode.V))
+        {
+            slide = true;
+        }
+
+
+        if (grounded  && !stumbler) //jump
+        {
+            if (jump) 
+           {
+
+                GetComponent<Rigidbody2D>().velocity = new Vector2(GetComponent<Rigidbody2D>().velocity.x, 0);
+                GetComponent<Rigidbody2D>().AddForce(new Vector2(0, jumpForce * 33.5f));
+
+                Invoke("jumpSoundEnds", 0.4f);
+                doubleJumpSound.SetActive(false);
+                Invoke("doubleJumpOn", 0.3f);
+
+                tutClose = true;
+                if (PlayerPrefs.GetInt("soundControl") == 1)
+                {
+                    jumpSound.SetActive(true);
+                }
+            }
+            //canJump = true;
+            
+
+        }
+
+        if (!grounded && doubleJump)
+        {
+            if (jump)
+            {
+                GetComponent<Rigidbody2D>().velocity = new Vector2(GetComponent<Rigidbody2D>().velocity.x, 0);
+                GetComponent<Rigidbody2D>().AddForce(new Vector2(0, 1943)); //jumpForce * 33.5f
+                anim.SetBool("GobDoubleJump", true);
+                doubleJumpSound.SetActive(true);
+                Invoke("doubleJumpOff", 0.1f);
+
+            }
+            
+        }
+
+        if (grounded && !noWalk)
+        {
+            doubleJump = false;
+            anim.SetBool("GobDoubleJump", false);
+            walkSound.SetActive(true);
+        }
+
+        if (!grounded || moveSpeed == 0)
+        {
+            walkSound.SetActive(false);
+        }
+
+
+        if (invulJump)
+        {
+            GetComponent<Rigidbody2D>().velocity = new Vector2(GetComponent<Rigidbody2D>().velocity.x, 0);
+            GetComponent<Rigidbody2D>().AddForce(new Vector2(0, jumpForce * 33.5f));
+        }
+
+       
+        GetComponent<Rigidbody2D>().velocity = new Vector2(moveSpeed, GetComponent<Rigidbody2D>().velocity.y);
+
+        //if (hitCounter == 2 && hit)
+        //{
+        //    anim.SetBool("GobHit3", true);
+        //    Invoke("GobHit3Ends", 0.4f);
+        //    attackSound.SetActive(true);
+        //    //Invoke("afterHit", 0.1f);
+        //}
+
+
+
+
+
+        //else if (hitCounter == 1 && hit)
+        //{
+        //    anim.SetBool("GobHit2", true);
+        //    Invoke("GobHit2Ends", 0.4f);
+        //    Invoke("hitCounterTwo", 0.2f);
+        //    attackSound.SetActive(true);
+        //    //Invoke("afterHit", 0.1f);
+        //}
+
+        //else if (hit)
+        //{
+        //    anim.SetBool("GobHit", true);
+        //    GetComponent<BoxCollider2D>().enabled = false;
+        //    attackSound.SetActive(true);
+        //    Invoke("hitCounterOne", 0.2f);
+        //    Invoke("GobHitEnds", 0.4f);
+            
+
+        //    if (grounded)
+        //    {
+        //        killer.SetActive(true);
+        //    }
+
+        //    else
+        //    {
+        //        airKiller.SetActive(true);
+        //    }
+
+        //}
+
+        if (anim.GetBool("GobHit"))
+            anim.SetBool("GobHit", false);
+    
+
+
+        if ( hit && !anim.GetBool("stumble")) //hit
+        {
+            anim.SetBool("GobHit", true);
+            //Invoke("hitSoundz", 0.01f);
+            Invoke("GobHitEnds", 0.4f);
+
+            if (PlayerPrefs.GetInt("soundControl") == 1)
+            {
+                attackSound.SetActive(true);
+            }
+
+            hitter = true;
+
+
+
+            if (grounded)
+            {
+                killer.SetActive(true);
+            }
+
+            else
+            {
+                airKiller.SetActive(true);
+            }
+        }
+
+        if (anim.GetBool("GobSlide"))
+            anim.SetBool("GobSlide", false);
+
+
+
+        if (slide) //slide
+        {
+            anim.SetBool("GobSlide", true);
+            walkSound.SetActive(false);
+            slideSound.SetActive(true);
+            noWalk = true;
+            Invoke("slideeEnds", .5f);
+        }
+
+    }
+
+    class GetCardinalDirections
+    {
+        public static readonly Vector2 Up = new Vector2(0, 1);
+        public static readonly Vector2 Down = new Vector2(0, -1);
+        public static readonly Vector2 Right = new Vector2(1, 0);
+        public static readonly Vector2 Left = new Vector2(-1, 0);
+
+        public static readonly Vector2 UpRight = new Vector2(1, 1);
+        public static readonly Vector2 UpLeft = new Vector2(-1, 1);
+        public static readonly Vector2 DownRight = new Vector2(1, -1);
+        public static readonly Vector2 DownLeft = new Vector2(-1, -1);
+    }
+
+    public void Update()
+    {
+        //if (zombie.GetComponent<Zombie1Death>().zombieDead)
+        //{
+        //    shake = 1;
+        //}
+        extraHealth = PlayerPrefs.GetInt("extraHealth");
+        //flawlessVictory = PlayerPrefs.GetInt("flawlessVictory");
+        if (shake > 0)
+        {
+            camTransform.localPosition = originalPos + Random.insideUnitSphere * shakeAmount;
+
+            shake -= Time.deltaTime * decreaseFactor;
+        }
+        else
+        {
+            shake = 0f;
+            camTransform.localPosition = originalPos;
+        }
+
+        if (levelEnd)
+        {
+            return;
+        }
+
+        if (hit)
+        {
+            Invoke("hitFalse", .3f);
+        }
+
+        if (slide)
+        {
+            Invoke("slideEnds", 1f);
+        }
+
+        if (jump)
+        {
+            Invoke("jumpEnds", 0.1f);
+        }
+
+
+
+        levelScore++;
+        
+        DetectSwipe();
+        //DetectSwipe();
+
+
+        grounded = Physics2D.OverlapArea(point1.position, point2.position, onlyGroundMask);
+
+        
+
+        //grounded = false;
+
+        HungerMeter = meatBar.fillAmount;
+        
+        
+
+
+        
+
+
+
+
+        //if (GameObject.Find("boxA1").GetComponent<BoxBreakScript>().stumbled)
+        //{
+        //    anim.SetBool("GobStumble", true);
+        //    jumpForce = 0;
+        //}
+
+        //else if (GameObject.Find("boxA2").GetComponent<BoxBreakScript2>().stumbled)
+        //{
+        //    anim.SetBool("GobStumble", true);
+        //    jumpForce = 0;
+        //}
+
+        //else if (GameObject.Find("boxA3").GetComponent<BoxBreakScript3>().stumbled)
+        //{
+        //    anim.SetBool("GobStumble", true);
+        //    jumpForce = 0;
+        //}
+
+        //else if (GameObject.Find("boxA4").GetComponent<BoxBreakScript4>().stumbled)
+        //{
+        //    anim.SetBool("GobStumble", true);
+        //    jumpForce = 0;
+        //}
+
+        //else if (GameObject.Find("boxA5").GetComponent<BoxBreakScript5>().stumbled)
+        //{
+        //    anim.SetBool("GobStumble", true);
+        //    jumpForce = 0;
+        //}
+
+        //else if (GameObject.Find("boxA6").GetComponent<BoxBreakScript6>().stumbled)
+        //{
+        //    anim.SetBool("GobStumble", true);
+        //    jumpForce = 0;
+        //}
+
+
+
+        //else
+        //{
+        //    anim.SetBool("GobStumble", false);
+        //    Invoke("stumbleEnds", 0.5f);
+        //}
+
+
+
+        
+
+
+       
+
+        //else
+        //{
+        //    canJump = false;
+        //}
+
+        //if (anim.GetBool("GobHit"))
+        //anim.SetBool("GobHit", false);
+
+
+        
+	}
+    //public void Hit()
+    //{
+    //	if (anim.GetBool("GobHit"))
+    //		anim.SetBool("GobHit", false);
+    //	anim.SetBool("GobHit", true);
+    //}
+    //public void disableInvul()
+    //{
+    //	anim.SetBool("GobInvul", false);
+    //}
+
+    
+  
+    
+
+
+
+
+    public void finish()
+	{
+		moveSpeed = 0f;
+	}
+
+    
+    public void poiNotEaten()
+    {
+        poiEaten = false;
+        poiSound.SetActive(false);
+
+    }
+
+    public void fliesFlies()
+    {
+        GobFly.SetActive(false);
+    }
+
+    public void gameover()
+    {
+        Time.timeScale = 0;
+    }
+
+    void healthLoss()
+    {
+        activeExtraHealth.GetComponent<extraHealth>().ExtraHealth = 0;
+    }
+
+    
+
+    void OnTriggerEnter2D(Collider2D other)
+    {
+
+        //if (other.tag == "Enemy" && activeExtraHealth.GetComponent<extraHealth>().ExtraHealth == 1)
+        //{
+
+
+        //    invulJump = true;
+        //    Invoke("invulJumpEnds", 0.01f);
+        //    Invoke("healthLoss", 0.01f);
+        //    anim.SetBool("Invul", true);
+        //    Invoke("invulEnds", 2);
+
+        //    //GetComponent<Rigidbody2D>().velocity = new Vector2(GetComponent<Rigidbody2D>().velocity.x, 0);
+        //    //GetComponent<Rigidbody2D>().AddForce(new Vector2(0, jumpForce * 33.5f));
+
+        //    //GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+        //    //GetComponent<Rigidbody2D>().AddForce(new Vector2(700, 700));
+        //    //activeExtraHealth.GetComponent<extraHealth>().ExtraHealth = 0;
+        //}
+
+        if (other.tag == "Enemy" && !isDead && activeExtraHealth.GetComponent<extraHealth>().ExtraHealth > 0)
+        {
+            GetComponent<Rigidbody2D>().AddForce(new Vector2(300, 700));
+            Invoke("invulAnim", 0.1f);
+            Invoke("invulAnim2", 0.2f);
+            Invoke("invulAnim", 0.3f);
+            Invoke("invulAnim2", 0.4f);
+            Invoke("invulAnim", 0.5f);
+            Invoke("invulAnim2", 0.6f);
+            Invoke("invulAnim", 0.7f);
+            Invoke("invulAnim2", 0.8f);
+            Invoke("invulAnim", 0.9f);
+            Invoke("invulAnim2", 1);
+            Invoke("invulAnim", 01.1f);
+            Invoke("invulAnim2", 01.2f);
+            Invoke("invulAnim", 01.3f);
+            Invoke("invulAnim2", 01.4f);
+            Invoke("invulAnim", 01.5f);
+            Invoke("invulAnim2", 01.6f);
+            Invoke("invulAnim", 01.7f);
+            Invoke("invulAnim2", 01.8f);
+            Invoke("invulAnim", 01.9f);
+            Invoke("invulAnim2", 2);
+            Invoke("invulAnim", 02.1f);
+            Invoke("invulAnim2", 02.2f);
+            Invoke("invulAnim", 02.3f);
+            Invoke("invulAnim2", 02.4f);
+            Invoke("invulAnim", 02.5f);
+            Invoke("invulAnim2", 02.6f);
+            Invoke("invulAnim", 02.7f);
+            Invoke("invulAnim2", 02.8f);
+            Invoke("invulAnim", 02.9f);
+            Invoke("invulAnim2", 3);
+            flawlessVictory += 1;
+
+            Invoke("invulEnds", 2);
+            extraHealthIcon.SetActive(false);
+        }
+
+        if (other.tag == "Spike" && !isDead && activeExtraHealth.GetComponent<extraHealth>().ExtraHealth > 0)
+        {
+            GetComponent<Rigidbody2D>().AddForce(new Vector2(300, 700));
+            Invoke("invulAnim", 0.1f);
+            Invoke("invulAnim2", 0.2f);
+            Invoke("invulAnim", 0.3f);
+            Invoke("invulAnim2", 0.4f);
+            Invoke("invulAnim", 0.5f);
+            Invoke("invulAnim2", 0.6f);
+            Invoke("invulAnim", 0.7f);
+            Invoke("invulAnim2", 0.8f);
+            Invoke("invulAnim", 0.9f);
+            Invoke("invulAnim2", 1);
+            Invoke("invulAnim", 01.1f);
+            Invoke("invulAnim2", 01.2f);
+            Invoke("invulAnim", 01.3f);
+            Invoke("invulAnim2", 01.4f);
+            Invoke("invulAnim", 01.5f);
+            Invoke("invulAnim2", 01.6f);
+            Invoke("invulAnim", 01.7f);
+            Invoke("invulAnim2", 01.8f);
+            Invoke("invulAnim", 01.9f);
+            Invoke("invulAnim2", 2);
+            Invoke("invulAnim", 02.1f);
+            Invoke("invulAnim2", 02.2f);
+            Invoke("invulAnim", 02.3f);
+            Invoke("invulAnim2", 02.4f);
+            Invoke("invulAnim", 02.5f);
+            Invoke("invulAnim2", 02.6f);
+            Invoke("invulAnim", 02.7f);
+            Invoke("invulAnim2", 02.8f);
+            Invoke("invulAnim", 02.9f);
+            Invoke("invulAnim2", 3);
+            flawlessVictory += 1;
+
+            Invoke("invulEnds", 2);
+            extraHealthIcon.SetActive(false);
+        }
+
+
+        else if (other.tag == "Enemy" && !isDead && activeExtraHealth.GetComponent<extraHealth>().ExtraHealth == 0)
+        {
+            GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+            anim.SetBool("GobDeath", true);
+            deathSound.SetActive(true);
+            //GetComponent<Rigidbody2D>().AddForce(new Vector2(300, 1200));
+            GetComponent<Rigidbody2D>().AddForce(new Vector2(-600, 850));
+            isDead = true;
+            adDeath += 1;
+            PlayerPrefs.SetInt("adDeath", adDeath);
+            PlayerPrefs.Save();
+
+            //bsTrans.SetActive(true);
+            Debug.Log("DEAD!");
+            flawlessVictory += 1;
+
+            
+
+            PlayerPrefs.SetInt("BölümSkoru", levelScore);
+            PlayerPrefs.Save();
+
+            PlayerPrefs.SetFloat("HungerBar", HungerMeter);
+            PlayerPrefs.Save();
+        }
+
+        else if (other.tag == "Spike" && !isDead && activeExtraHealth.GetComponent<extraHealth>().ExtraHealth == 0)
+        {
+            GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+
+            deathSound.SetActive(true);
+            anim.SetBool("GobDeath2", true);
+            GetComponent<Rigidbody2D>().AddForce(new Vector2(800, 1000));
+            flawlessVictory += 1;
+
+            //GetComponent<Rigidbody2D>().AddForce(new Vector2(300, 1200));
+
+            //bsTrans.SetActive(true);
+
+
+            isDead = true;
+            adDeath += 1;
+            PlayerPrefs.SetInt("BölümSkoru", levelScore);
+            PlayerPrefs.Save();
+
+            PlayerPrefs.SetFloat("HungerBar", HungerMeter);
+            PlayerPrefs.Save();
+
+            
+
+        }
+
+        //else if (other.tag == "Destroyer" && !isDead)
+        //{
+        //    GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+        //    bsTrans.SetActive(true);
+
+
+        //    moveSpeed = 0f;
+        //    anim.SetBool("GobDeath", true);
+        //    fallSound.SetActive(true);
+        //    isDead = true;
+        //    PlayerPrefs.SetInt("BölümSkoru", levelScore);
+        //    PlayerPrefs.Save();
+
+        //    PlayerPrefs.SetFloat("HungerBar", HungerMeter);
+        //    PlayerPrefs.Save();
+        //}
+
+        else if (other.tag == "Destroyer" && !isDead)
+        {
+            GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+            extraHealth = 0;
+            PlayerPrefs.SetInt("extraHealth", extraHealth);
+            PlayerPrefs.Save();
+
+            moveSpeed = 0f;
+            anim.SetBool("GobDeath", true);
+            fallSound.SetActive(true);
+            isDead = true;
+            adDeath += 1;
+            PlayerPrefs.SetInt("BölümSkoru", levelScore);
+            PlayerPrefs.Save();
+
+            PlayerPrefs.SetFloat("HungerBar", HungerMeter);
+            PlayerPrefs.Save();
+            
+        }
+
+        else if (other.tag == "Destroyer" && isDead)
+        {
+            GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+
+            moveSpeed = 0f;
+            anim.SetBool("GobDeath", true);
+            fallSound.SetActive(true);
+            isDead = true;
+            PlayerPrefs.SetInt("BölümSkoru", levelScore);
+            PlayerPrefs.Save();
+
+            PlayerPrefs.SetFloat("HungerBar", HungerMeter);
+            PlayerPrefs.Save();
+            GetComponent<Rigidbody2D>().gravityScale = 0;
+        }
+
+        else if (other.tag == "LevelEnd" && !isDead)
+        {
+            GetComponent<Rigidbody2D>().velocity = Vector2.zero;
+            moveSpeed = 6f;
+            levelEndDial.SetActive(true);
+            Invoke("scoreboard", 3.2f);
+            levelEnd = true;
+            jumpForce = 0;
+            //MeatCount.GetComponent<MeatCOunt>().enabled = true;
+            //DistanceCounter.GetComponent<DistanceCount>().enabled = true;
+            anim.SetBool("GobFinish", true);
+            Invoke("finish", 1);
+
+
+
+            if (flawlessVictory == 0)
+            {
+                GameObject.Find("Goblin").GetComponent<GoldCounter>().IncreaseScore(10);
+            }
+
+            else if (flawlessVictory <= 2)
+            {
+                GameObject.Find("Goblin").GetComponent<GoldCounter>().IncreaseScore(5);
+            }
+
+            // gameStar.SetActive(true);
+
+
+
+            //GameObject.Find("levelLoadManager").GetComponent<levelLoadManager>().unlockManager = 2;
+
+            PlayerPrefs.SetInt("flawlessVictory", flawlessVictory);
+            PlayerPrefs.Save();
+
+
+            if (PlayerPrefs.GetInt("meatHiscore") < meatScore)
+            { 
+            
+                PlayerPrefs.SetInt("meatHiscore", meatScore);
+                PlayerPrefs.Save();
+                meatBest.SetActive(true);
+            }
+
+            if (PlayerPrefs.GetInt("zombieHiscore") < zombieScore)
+            {
+
+                PlayerPrefs.SetInt("zombieHiscore", zombieScore);
+                PlayerPrefs.Save();
+                zombieBest.SetActive(false);
+            }
+
+
+            thisLevelScore.text = "" + PlayerPrefs.GetInt("BölümSkoru");
+
+
+            
+
+        }
+
+        else if (other.tag == "poiMeat")
+        {
+            poiEaten = true;
+            Invoke("poiNotEaten", 3);
+            meatBar.color = new Color32(41, 103, 67, 255);
+            Invoke("changeColor", 3);
+            GetComponent<GeneralScore>().IncreaseScore(-100);
+            GobFly.SetActive(true);
+            Invoke("fliesFlies", 3);
+            poiSound.SetActive(true);
+        }
+
+        //else if (other.tag == "meat")
+        //{
+
+
+        //    if (meatOne.activeSelf && !meatTwo.activeSelf)
+        //    {
+        //        meatTwo.SetActive(true);
+        //        Invoke("meatTwoEnds", 0.5f);
+        //    }
+
+        //    else if (meatOne.activeSelf && meatTwo.activeSelf)
+        //    {
+        //        meatThree.SetActive(true);
+        //        Invoke("meatThreeEnds", 0.5f);
+        //    }
+
+        //    else if (!meatOne.activeSelf)
+        //    {
+        //        meatOne.SetActive(true);
+        //        Invoke("meatOneEnds", 0.5f);
+        //    }
+        //}   
+
+        //else if (other.tag == "HitField")
+        //{
+        //    InHitArea = true;
+        //    jumpForce = 0;
+
+        //}
+    }
+
+    public void slideeEnds()
+    {
+        slide = false;
+    }
+    public void jumpEnds()
+    {
+        jump = false;
+    }
+
+    public void hitEnds()
+    {
+        hit = false;
+    }
+
+    public void DetectSwipe()
+    {
+        if (PlayerPrefs.GetInt("controls") == 0)
+        { 
+            if (Input.touches.Length > 0)
+            {
+                Touch t = Input.GetTouch(0);
+
+                if (t.phase == TouchPhase.Began)
+                {
+                    _firstPressPos = new Vector2(t.position.x, t.position.y);
+
+                }
+
+            if (t.phase == TouchPhase.Ended)
+            {
+
+                _secondPressPos = new Vector2(t.position.x, t.position.y);
+                _currentSwipe = new Vector3(_secondPressPos.x - _firstPressPos.x, _secondPressPos.y - _firstPressPos.y);
+
+
+                // Make sure it was a legit swipe, not a tap
+                if (_currentSwipe.magnitude < MinSwipeLength)
+                {
+                    SwipeDirection = Swipe.None;
+                    return;
+                }
+
+
+                _currentSwipe.Normalize();
+
+                // use dot product against 4 cardinal directions.
+                // return if one of them is > 0.5f;
+
+
+                //compare north
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.Up) > 0.5f)
+                {
+                    SwipeDirection = Swipe.Up;
+                    tutJump = true;
+                    jump = true;
+                    print("Up!");
+                    Invoke("jumpEnds", 0.9f);
+                    Invoke("tutJumpEnds", 0.01f);
+                    return;
+                }
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.Down) > 0.5f)
+                {
+                    SwipeDirection = Swipe.Down;
+                    slide = true;
+                    Invoke("slideeEnds", 0.1f);
+                    print("Down!");
+                    return;
+                }
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.Left) > 0.5f)
+                {
+                    SwipeDirection = Swipe.Left;
+                    print("Left");
+                    return;
+                }
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.Right) > 0.5f)
+                {
+                    SwipeDirection = Swipe.Right;
+
+                    hit = true;
+                    print("Right");
+                    Invoke("hitEnds", 0.1f);
+                    return;
+                }
+
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.UpRight) > 0.25f)
+                {
+                    SwipeDirection = Swipe.UpRight;
+                    print("UpRight");
+                    tutJump = true;
+                        Invoke("tutJumpEnds", 0.01f);
+                        return;
+                }
+
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.UpLeft) > 0.25f)
+                {
+                    SwipeDirection = Swipe.UpLeft;
+                    print("UpLeft");
+                        Invoke("tutJumpEnds", 0.01f);
+                        tutJump = true;
+                        return;
+                }
+
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.DownLeft) > 0.25f)
+                {
+                    SwipeDirection = Swipe.DownLeft;
+                    print("DownLeft");
+                    return;
+                }
+
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.DownRight) > 0.25f)
+                {
+                    SwipeDirection = Swipe.DownRight;
+
+                    slide = true;
+
+                    return;
+                }
+            }
+        }
+        else
+        {
+            if (Input.GetMouseButtonDown(0))
+            {
+                _firstPressPos = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+            }
+            else
+            {
+                SwipeDirection = Swipe.None;
+                Invoke("jumpEnds", 0.9f);
+                //Debug.Log ("None");
+            }
+            if (Input.GetMouseButtonUp(0))
+            {
+
+                _secondPressPos = new Vector2(Input.mousePosition.x, Input.mousePosition.y);
+                _currentSwipe = new Vector3(_secondPressPos.x - _firstPressPos.x, _secondPressPos.y - _firstPressPos.y);
+
+
+                // Make sure it was a legit swipe, not a tap
+                if (_currentSwipe.magnitude < MinSwipeLength)
+                {
+                    SwipeDirection = Swipe.None;
+
+                    return;
+
+                }
+
+                _currentSwipe.Normalize();
+
+                //Swipe directional check and it is not working at the moment.
+                // Swipe up
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.Up) > 0.5f)
+                {
+                    if (Vector2.Dot(_currentSwipe, GetCardinalDirections.UpRight) > 0.25f)
+                    {
+                        SwipeDirection = Swipe.UpRight;
+                        jump = true;
+                        print("UpRight");
+                        Invoke("jumpEnds", 0.9f);
+                        return;
+                    }
+                    if (Vector2.Dot(_currentSwipe, GetCardinalDirections.UpLeft) > 0.25f)
+                    {
+                        SwipeDirection = Swipe.UpLeft;
+                        jump = true;
+                        print("UpLeft");
+                        Invoke("jumpEnds", 0.9f);
+                        return;
+                    }
+
+                    SwipeDirection = Swipe.Up;
+                    jump = true;
+
+                    print("Up!");
+                    Invoke("jumpEnds", 0.9f);
+                    return;
+                }
+
+
+
+
+
+
+
+
+
+
+
+
+
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.Down) > 0.5f)
+                {
+                    if (Vector2.Dot(_currentSwipe, GetCardinalDirections.DownLeft) > 0.25f)
+                    {
+                        SwipeDirection = Swipe.DownLeft;
+                        slide = true;
+                        Invoke("slideeEnds", 0.1f);
+                        print("DownLeft");
+                        return;
+                    }
+                    if (Vector2.Dot(_currentSwipe, GetCardinalDirections.DownRight) > 0.25f)
+                    {
+                        SwipeDirection = Swipe.DownRight;
+                        slide = true;
+                        Invoke("slideeEnds", 0.1f);
+                        print("DownRight");
+                        return;
+                    }
+                    SwipeDirection = Swipe.Down;
+                    slide = true;
+                    Invoke("slideEnds", 0.1f);
+                    print("Down!");
+                    return;
+                }
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.Left) > 0.5f)
+                {
+                    SwipeDirection = Swipe.Left;
+                    print("Left");
+                    return;
+                }
+                if (Vector2.Dot(_currentSwipe, GetCardinalDirections.Right) > 0.5f)
+                    {
+                    SwipeDirection = Swipe.Right;
+
+                    hit = true;
+                    print("Right");
+                    Invoke("hitEnds", 0.1f);
+                    return;
+                    }
+                }
+            }
+        }
+    }
+
+    void OnDisable()
+    {
+        PlayerPrefs.SetInt("adDeath", adDeath);
+        PlayerPrefs.Save();
+
+        PlayerPrefs.SetFloat("HungerBar", HungerMeter);
+        PlayerPrefs.Save();
+    }
+}
+
